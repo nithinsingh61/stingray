@@ -62,28 +62,23 @@ class Bispectrum(object):
     
     self.k= self.nsamp//self.m
     
+    
   def compute_bispectra(self,lc):
-  	
-
-  	
-    bispec = np.zeros([self.nfft,self.nfft]) 
-    mask = hankel(np.arange(self.nfft),np.array([self.nfft-1]+range(self.nfft-1)))
-    #here hankel serves  the function of summed frequncy which is used in bispectra 
-    pseg = np.arange(self.m).transpose()
-
-    for i in xrange(self.k):
-      iseg = lc.counts[pseg].reshape(1,-1)
+    
+   bispec = np.zeros([self.nfft,self.nfft]) 
+   mask = hankel(np.arange(self.nfft),np.array([self.nfft-1]+range(self.nfft-1)))
+   #here hankel serves  the function of summed frequncy which is used in bispectra 
+   pseg = np.arange(self.m).transpose()
+   for i in xrange(self.k):
+     iseg = lc.counts[pseg].reshape(1,-1)
       Xf = scipy.fftpack.fft(iseg - np.mean(iseg), self.nfft) / self.m
       CXf = np.conjugate(Xf).ravel(order='C') 
       bispec = bispec + \
        (Xf * np.transpose(Xf)) * CXf[mask].reshape(self.nfft, self.nfft)
       pseg = pseg + self.m
-
-    bispec = scipy.fftpack.fftshift(bispec) / self.k
-
-
- 
-    return bispec
+   
+   bispec = scipy.fftpack.fftshift(bispec) / self.k
+   return bispec
 
 
  
@@ -107,12 +102,11 @@ class Bispectrum(object):
       bispec = bispec + \
       (Xf * np.transpose(Xf)) * CXf[mask].reshape(self.nfft, self.nfft)
       pseg = pseg + self.m
-
-    bispec=bispec/self.k;
-    sklsq=sklsq/self.k
-    skplsq=skplsq/self.k
-
-    bicoh= (bispec**2) / (sklsq*skplsq)
-
+   
+   bispec=bispec/self.k;
+   sklsq=sklsq/self.k
+   skplsq=skplsq/self.k
+   bicoh= (bispec**2) / (sklsq*skplsq)
+   
    return bicoh
 
