@@ -14,6 +14,7 @@ class Bispectrum(object):
 
     def __init__(self, lc=None, m=64, nfft=128):
         """
+    
         Parameters
         ----------
         lc: lightcurve.Lightcurve object, optional, default None
