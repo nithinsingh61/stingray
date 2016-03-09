@@ -74,7 +74,7 @@ class Bispectrum(object):
             bispec = bispec + (Xf * np.transpose(Xf)) * \
                 CXf[mask].reshape(self.nfft, self.nfft)
             pseg = pseg + self.m
-
+   
         bispec = scipy.fftpack.fftshift(bispec) / self.k
         return bispec
 
@@ -99,10 +99,10 @@ class Bispectrum(object):
             bispec = bispec + (Xf * np.transpose(Xf)) * \
                 CXf[mask].reshape(self.nfft, self.nfft)
             pseg = pseg + self.m
-
+   
         bispec = bispec / self.k
         sklsq = sklsq / self.k
         skplsq = skplsq / self.k
         bicoh = (bispec**2) / (sklsq * skplsq)
-
+   
         return bicoh
