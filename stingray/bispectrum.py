@@ -16,6 +16,7 @@ class Bispectrum(object):
 
     """
    
+    
     Parameters 
     ----------
     lc: lightcurve.Lightcurve object, optional, default None
