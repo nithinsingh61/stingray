@@ -114,5 +114,5 @@ class Bispectrum(object):
 
     bicoh= (bispec**2) / (sklsq*skplsq)
 
-  	return bicoh
+   return bicoh
 
