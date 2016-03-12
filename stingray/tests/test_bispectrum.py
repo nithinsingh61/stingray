@@ -4,7 +4,10 @@ from nose.tools import raises
 
 from stingray import Lightcurve
 from stingray import Bispectrum
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    raise ImportError("Matplotlib required")
 
 
 class TestBispectra(object):
