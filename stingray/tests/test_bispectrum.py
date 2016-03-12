@@ -4,10 +4,6 @@ from nose.tools import raises
 
 from stingray import Lightcurve
 from stingray import Bispectrum
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    raise ImportError("Matplotlib required")
 
 
 class TestBispectra(object):
@@ -32,7 +28,10 @@ class TestBispectra(object):
         assert bs.nsamp is None
 
     def test_make_bispectra_from_lightcurve(self):
-
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            raise ImportError("Matplotlib required")
         bs = Bispectrum(self.lc, m=64, nfft=64)
         bispectrum = bs.compute_bispectrum(self.lc)
         print bispectrum
@@ -72,6 +71,10 @@ class TestBispectra(object):
                         bispectrum[i + x, j + x])
 
     def test_xBichorence(self):
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            raise ImportError("Matplotlib required")
         bs = Bispectrum(self.lc, m=64, nfft=64)
         bicoherence = bs.bicoherence(self.lc)
         print bicoherence
