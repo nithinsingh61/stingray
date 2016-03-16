@@ -4,10 +4,7 @@ from nose.tools import raises
 
 from stingray import Lightcurve
 from stingray import Bispectrum
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    raise ImportError("Matplotlib required")
+import matplotlib.pyplot as plt
 
 
 class TestBispectra(object):
@@ -50,7 +47,7 @@ class TestBispectra(object):
         plt.title('Bispectrum ')
         plt.xlabel('f1')
         plt.ylabel('f2')
-        plt.show()
+        # plt.show()
 
     def test_symmetry1(self):
         # B(w1,w2) == B(w2,w1)
@@ -89,7 +86,7 @@ class TestBispectra(object):
         plt.title('Bichorence')
         plt.xlabel('f1')
         plt.ylabel('f2')
-        plt.show()
+        # plt.show()
 
     def test_init_with_lightcurve(self):
         assert Bispectrum(self.lc)
