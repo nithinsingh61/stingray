@@ -32,7 +32,7 @@ class TestBispectra(object):
 
         bs = Bispectrum(self.lc, m=64, nfft=64)
         bispectrum = bs.compute_bispectrum(self.lc)
-        print bispectrum
+        # print bispectrum
         assert bs.nsamp == self.lc.counts.shape[0]
         if bs.nfft % 2 == 0:
             freaxis = np.transpose(
@@ -72,7 +72,7 @@ class TestBispectra(object):
 
         bs = Bispectrum(self.lc, m=64, nfft=64)
         bicoherence = bs.bicoherence(self.lc)
-        print bicoherence
+        # print bicoherence
         assert bs.nsamp == self.lc.counts.shape[0]
         if bs.nfft % 2 == 0:
             freaxis = np.transpose(
