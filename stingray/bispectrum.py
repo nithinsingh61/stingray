@@ -3,6 +3,7 @@ import numpy as np
 from scipy.linalg import hankel
 import scipy.fftpack
 import stingray.lightcurve as lightcurve
+import matplotlib.pyplot as plt
 
 # import stingray.utils as utils
 # from stingray.utils import simon
@@ -77,6 +78,23 @@ class Bispectrum(object):
 
         bispec = scipy.fftpack.fftshift(bispec) / self.k
         return bispec
+
+    def plot(self):
+        bispectrum = self.compute_bispectrum(self.lc)
+        print bispectrum
+        if self.nfft % 2 == 0:
+            freaxis = np.transpose(
+                np.arange(-1 * self.nfft / 2, self.nfft / 2))
+        else:
+            freaxis = np.transpose(
+                np.arange(-1 * (self.nfft - 1) / 2, (self.nfft - 1) / 2 + 1))
+        cont = plt.contourf(freaxis, freaxis, abs(
+                    bispectrum), 200, cmap=plt.cm.Spectral_r)
+        plt.colorbar(cont)
+        plt.title('Bispectrum ')
+        plt.xlabel('f1')
+        plt.ylabel('f2')
+        plt.show()
 
     def bicoherence(self, lc):
 
