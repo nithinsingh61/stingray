@@ -4,106 +4,191 @@ from scipy.linalg import hankel
 import scipy.fftpack
 import stingray.lightcurve as lightcurve
 
-# import stingray.utils as utils
-# from stingray.utils import simon
+__all__ = ["Bispectrum", "bicoherence"]
 
-__all__ = ["Bispectrum"]
+
+def bicoherence(lc):
+    """
+    Estimates Bicoherence  of a light curve.
+
+    Parameters
+    ----------
+    lc: lightcurve.Lightcurve object
+
+
+    Returns
+    -------
+    coh : np.ndarray
+        Bicoherence array
+    """
+
+    if not isinstance(lc, lightcurve.Lightcurve):
+        raise TypeError("lc must be a lightcurve.Lightcurve object")
+
+    bispec = Bispectrum(lc)
+
+    return bispec.bicoherence()
 
 
 class Bispectrum(object):
 
-    def __init__(self, lc=None, m=64, nfft=128):
+    def __init__(self, lc=None, n=64, nfft=128):
         """
-    
+        Make a  Bispectrum from a light curve.
+        You can also make an empty Bispectrum object to populate with your
+        own fourier-transformed data (this can sometimes be useful when making
+        binned periodograms).
+
         Parameters
         ----------
         lc: lightcurve.Lightcurve object, optional, default None
-        The light curve data to be Fourier-transformed.
+            The light curve data to be Fourier-transformed.
 
-        m : Number of samples in each segment Default :64(expecting huge data)
+        n : int
+            Number of samples in each segment Default :64(expecting huge data)
 
-        nfft : Fft size Default is 128
+        nfft : int
+            Fft size Default is 128
 
 
-        attributes
+        Attributes
         ----------
-        k: Number of segments
+        m: int
+            Number of segments
 
-        m : Number of samples in each segment Default :64(expecting huge data)
+        n : int
+            Number of samples in each segment Default :64(expecting huge data)
 
-        nfft : Fft size Default is 128
+        nfft : int
+            Fft size Default is 128
 
-        nsamp  : total numberof samples from the input signal
+        ncounts  : int
+            total number of samples from the input signal
+
+        bispectrum : numpy.ndarray
+            the array of Bispectrum
 
         """
 
         if lc is not None:
             pass
         else:
-            self.k = None
+            self.m = None
             self.nfft = nfft
-            self.m = m
-            self.nsamp = None
+            self.n = n
+            self.ncounts = None
             return
-        self.m = m
+        self.n = n
         self.nfft = nfft
-        assert isinstance(lc, lightcurve.Lightcurve), \
-            "lc must be a lightcurve.Lightcurve object!"
 
-        lc.counts = lc.counts.ravel(order='C')
-        self.nsamp = lc.counts.shape[0]
+        if not isinstance(lc, lightcurve.Lightcurve):
+            raise TypeError("lc must be a lightcurve.Lightcurve object")
 
-        assert isinstance(m, int), "m is not an int !"
+        self.lc = lc
 
-        assert isinstance(nfft, int), "nfft is not an int !"
+        self.ncounts = self.lc.counts.shape[0]
 
-        self.k = self.nsamp // self.m
+        if isinstance(n, int) is False:
+            raise TypeError("n(No of samples in segment) must be an integer")
 
-    def compute_bispectrum(self, lc):
+        if isinstance(nfft, int) is False:
+            raise TypeError("nfft must be an integer")
+
+        self.m = self.ncounts // self.n
+
+        self.bispectrum = self._compute_bispectrum()
+
+    def _compute_bispectrum(self):
+        """
+
+        Computes the bispectrum of lightcurve from the given Bispectrum
+        object
+
+        B(f1,f2) = Xf1 * Xf2 * conjugate(X(f1+f2))
+
+        where Xf1 is the magnitude of fft at frequency f1
+        where Xf2 is the magnitude of fft at frequency f2
+        where X(f1+f2) is the magnitude of fft at frequency f1+f2
+
+
+        References
+        ----------
+        .. [1] Bispectrum estimation: A digital signal processing framework
+            C.L. Nikias ; M.R. Raghuveer   DOI: 10.1109/PROC.1987.13824
+
+        """
         bispec = np.zeros([self.nfft, self.nfft], dtype=complex)
-        mask = hankel(np.arange(self.nfft),
-                      np.array([self.nfft - 1] + list(range(self.nfft - 1))))
-        # hankel serves the function of summed frequncy in bispectra
-        Xf = 0
-        CXf = 0
-        pseg = np.arange(self.m).transpose()
 
-        for i in range(self.k):
-            iseg = lc.counts[pseg].reshape(1, -1)
-            Xf = scipy.fftpack.fft(iseg - np.mean(iseg), self.nfft) / self.m
-            CXf = np.conjugate(Xf).ravel(order='C')
+        hankelmatrix = hankel(np.arange(self.nfft),
+                              np.array([self.nfft - 1] + list(range(self.nfft - 1))))
+
+        # hankel matrix when used for indexing repective arrays helps
+        # us in obtaining summed frequencies X(f1+f2)
+
+        pseg = np.arange(self.n).transpose()
+
+        # we iterate over all segments , summing the fft over those iterations
+        # finally divide by number of segments to obtain mean
+        # followed by returning bispectrum
+
+        for i in range(self.m):
+            iseg = self.lc.counts[pseg].reshape(1, -1)
+            Xf = scipy.fftpack.fft(iseg - np.mean(iseg), self.nfft) / self.n
+            CXf = np.conjugate(Xf).ravel(order='F')
             bispec = bispec + (Xf * np.transpose(Xf)) * \
-                CXf[mask].reshape(self.nfft, self.nfft)
-            pseg = pseg + self.m
+                CXf[hankelmatrix].reshape(self.nfft, self.nfft)
+            pseg = pseg + self.n
 
-        bispec = scipy.fftpack.fftshift(bispec) / self.k
+        # Shift the zero-frequency component to the center of the spectrum.
+        bispec = scipy.fftpack.fftshift(bispec) / self.m
         return bispec
 
-    def bicoherence(self, lc):
+    def bicoherence(self):
+        """
+        Computes the bicoherence of lightcurve from the given Bispectrum
+        object
 
-        bispec = np.zeros([self.nfft, self.nfft], dtype=complex)
-        mask = hankel(np.arange(self.nfft),
-                      np.array([self.nfft - 1] + list(range(self.nfft - 1))))
-        # hankel serves  the function of summed frequncy in bispectra
-        pseg = np.arange(self.m).transpose()
-        sklsq = np.zeros([self.nfft, self.nfft], dtype=complex)
-        # k and l frequncies and their square summed over all segments
-        skplsq = np.zeros([self.nfft, self.nfft], dtype=complex)
-        # frequency at k plus l and its square summed over all segments
+        B(f1,f2) = abs(bispectrum(f1,f2))**2 / Pf1 * Pf2 * P(f1+f2)
 
-        for i in range(self.k):
-            iseg = lc.counts[pseg].reshape(1, -1)
-            Xf = scipy.fftpack.fft(iseg - np.mean(iseg), self.nfft) / self.m
-            CXf = np.conjugate(Xf).ravel(order='C')
-            sklsq = sklsq + (Xf * np.transpose(Xf))**2
-            skplsq = skplsq + (CXf[mask].reshape(self.nfft, self.nfft)**2)
-            bispec = bispec + (Xf * np.transpose(Xf)) * \
-                CXf[mask].reshape(self.nfft, self.nfft)
-            pseg = pseg + self.m
+        where Pf1 is the magnitude of powerspectra at frequency f1
+        where Pf2 is the magnitude of powerspectra at frequency f2
+        where P(f1+f2) is the magnitude of powerspectra  at frequency f1+f2
 
-        bispec = bispec / self.k
-        sklsq = sklsq / self.k
-        skplsq = skplsq / self.k
-        bicoh = (bispec**2) / (sklsq * skplsq)
+
+         References
+        ----------
+        .. [1] Bispectrum estimation: A digital signal processing framework
+                    C.L. Nikias ; M.R. Raghuveer   DOI: 10.1109/PROC.1987.13824
+
+        """
+
+        bicoh = np.zeros([self.nfft, self.nfft], dtype=complex)
+        hankelmatrix = hankel(np.arange(self.nfft),
+                              np.array([self.nfft - 1] + list(range(self.nfft - 1))))
+
+        # hankel matrix when used for indexing repective arrays helps
+        # us in obtaining summed frequencies X(f1+f2)
+
+        pseg = np.arange(self.n).transpose()
+
+        powerspec = np.zeros([1, self.nfft], dtype=complex)
+
+        # we iterate over all segments ,summing the power over those iterations
+        # finally divide by number of segments to obtain mean
+        # followed by returning bicoherence
+        for i in range(self.m):
+            iseg = self.lc.counts[pseg].reshape(1, -1)
+            Xf = scipy.fftpack.fft(iseg - np.mean(iseg), self.nfft) / self.n
+            CXf = np.conjugate(Xf)
+            powerspec = powerspec + (Xf * CXf)
+            pseg = pseg + self.n
+
+        powerspec = powerspec.ravel(order='F')
+
+        powerspec = scipy.fftpack.fftshift(powerspec) / self.m
+
+        bicoh = abs(self.bispectrum)**2 / \
+            (powerspec * np.transpose(powerspec) *
+             powerspec[hankelmatrix].reshape(self.nfft, self.nfft))
 
         return bicoh
